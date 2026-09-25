@@ -5,14 +5,13 @@ import java.util.List;
 public class Searcher {
 // checks if the phrase exists in the list
 public boolean searchExactPhrase(String phrase, List<String> list) {
-for (String item : list) {
-if (item.equals(phrase)) {
-return true;
-} else {
-return false;
-}
-}
-return false;
+    for (String item : list) {
+        if (item.equals(phrase)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 // Simple contains check
 public boolean searchWord(String word, List<String> list) {
@@ -28,7 +27,7 @@ return null; // Avoid IndexOutOfBounds
 // New: find elements starting with a given prefix
 public List<String> searchByPrefix(String prefix, List<String> list) {
 List<String> results = new ArrayList<>();
-for (String element : list) {
+for (String element : list) {   
 if (element.startsWith(prefix)) {
 results.add(element);
 }
