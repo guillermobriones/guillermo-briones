@@ -1,11 +1,16 @@
 package com.uem;
+
+import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
-
-
 public class Order {
-    protected String Id; 
+
+    @SerializedName("id")
+    protected String Id;
+
     public List<Article> articles;
+    public Order() {
+    }
 
     public Order(String Id, List<Article> articles) {
         this.Id = Id;
