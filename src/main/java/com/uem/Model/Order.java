@@ -1,6 +1,7 @@
-package com.uem;
+package com.uem.Model;
 
 import com.google.gson.annotations.SerializedName;
+
 import java.util.List;
 
 public class Order {
@@ -46,7 +47,7 @@ public class Order {
     }
     public String ToString(){
         for (Article article : articles) {
-            System.out.println("Articulo: " + article.getName() + ", Cantidad: " + article.getCantidad() + ", Precio: " + article.getPrecio() + ", Descuento: " + article.getDescuento());
+            System.out.println("Articulo: " + article.getNombre() + ", Cantidad: " + article.getCantidad() + ", Precio: " + article.getPrecio() + ", Descuento: " + article.getDescuento());
         }
         return "";
     }

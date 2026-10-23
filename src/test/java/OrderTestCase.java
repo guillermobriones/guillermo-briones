@@ -4,9 +4,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.ArrayList;
 
-
-import com.uem.Article;
-import com.uem.Order;
+import com.uem.Model.Article;
+import com.uem.Model.Order;
 
 
 public class OrderTestCase {

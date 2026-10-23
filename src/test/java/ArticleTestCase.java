@@ -2,7 +2,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.uem.Article;
+import com.uem.Model.Article;
 
 
 public class ArticleTestCase {
@@ -33,17 +33,17 @@ public class ArticleTestCase {
 
     @Test 
     public void testGettersAndSetters() {
-          assertEquals("Articulo1", article.getName());
+          assertEquals("Articulo1", article.getNombre());
           assertEquals(2, article.getCantidad());
           assertEquals(10.0, article.getPrecio());
           assertEquals(10.0, article.getDescuento());
     
-          article.setName("Articulo3");
+          article.setNombre("Articulo3");
           article.setCantidad(3);
           article.setPrecio(15.0);
           article.setDescuento(5.0);
     
-          assertEquals("Articulo3", article.getName());
+          assertEquals("Articulo3", article.getNombre());
           assertEquals(3, article.getCantidad());
           assertEquals(15.0, article.getPrecio());
           assertEquals(5.0, article.getDescuento());
