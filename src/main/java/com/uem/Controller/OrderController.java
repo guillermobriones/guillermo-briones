@@ -1,99 +1,99 @@
-
 package com.uem.Controller;
 
 import com.uem.Model.Article;
 import com.uem.Model.Order;
+import com.uem.Service.ExchangeRateService;
+import com.uem.Service.ExchangeRateService.ExchangeRate;
 import com.uem.View.OrderView;
 
+import javax.swing.SwingUtilities;
 import java.util.List;
+import java.util.Locale;
 
 public class OrderController {
-
-    // Factor fijo utilizado en el ejemplo del enunciado
-    private static final double USD_RATE = 1.162976;
-
     private final OrderView view;
     private final List<Order> orders;
+    private final ExchangeRateService exchangeRateService;
+    private int searchSequence = 0;
 
-    // Constructor del controlador
     public OrderController(OrderView view, List<Order> orders) {
         this.view = view;
         this.orders = orders;
+        this.exchangeRateService = new ExchangeRateService();
 
-        // Conectamos el boton de buscar
         view.addSearchListener(e -> searchOrder());
-
-        // Mostramos la ventana
         view.setVisible(true);
     }
 
-    // Busca un pedido por su identificador
     private void searchOrder() {
-
+        int currentSearch = ++searchSequence;
         String id = view.getOrderId();
 
+        if (id.isBlank()) {
+            view.showOrder("Introduce el ID de un pedido.");
+            return;
+        }
+
+        Order found = null;
         for (Order order : orders) {
-
-            if (order.getId() != null &&
-                    order.getId().equalsIgnoreCase(id)) {
-
-                view.showOrder(formatOrder(order));
-                return;
+            if (order.getId() != null && order.getId().equalsIgnoreCase(id)) {
+                found = order;
+                break;
             }
         }
 
-        // Si no existe el pedido
-        view.showOrder("Order not found.");
-    }
-
-    // Prepara la informacion del pedido
-    private String formatOrder(Order order) {
-
-        StringBuilder result = new StringBuilder();
-
-        result.append("Order ")
-              .append(order.getId())
-              .append(":\n");
-
-        // Recorremos los articulos del pedido
-        for (Article article : order.getArticles()) {
-
-            double discounted = article.GetDiscountedamount();
-
-            result.append(article.getNombre())
-                  .append(" x")
-                  .append(article.getCantidad())
-                  .append(" @ ")
-                  .append(article.getPrecio())
-                  .append("$")
-                  .append(" (discount ")
-                  .append(article.getDescuento())
-                  .append("%)")
-                  .append(" = ")
-                  .append(discounted)
-                  .append("$\n");
+        if (found == null) {
+            view.showOrder("Order not found.");
+            return;
         }
 
-        // Utilizamos los metodos del modelo
-        double gross = order.GetGrossTotal();
-        double discounted = order.GetDiscountedTotal();
+        // Los importes originales de orders.json se consideran expresados en EUR.
+        double grossEur = found.GetGrossTotal();
+        double discountedEur = found.GetDiscountedTotal();
+        String euroDetails = formatOrder(found, grossEur, discountedEur);
+        view.showOrder(euroDetails + "\nConsultando último cambio EUR/USD publicado...");
 
-        result.append("Gross total: ")
-              .append(gross)
-              .append("$\n");
+        // La petición HTTP se hace sin bloquear el hilo de la interfaz de Swing.
+        exchangeRateService.fetchEurUsdRate().whenComplete((rate, error) ->
+                SwingUtilities.invokeLater(() -> {
+                    // Una búsqueda anterior no debe sobrescribir una más reciente.
+                    if (currentSearch != searchSequence || !view.isDisplayable()) {
+                        return;
+                    }
+                    if (error != null) {
+                        view.showOrder(euroDetails
+                                + "\nConversión a USD no disponible (comprueba Internet)."
+                                + "\nInténtalo de nuevo con Search.");
+                    } else {
+                        view.showOrder(euroDetails
+                                + formatDollarTotals(grossEur, discountedEur, rate));
+                    }
+                }));
+    }
 
-        result.append("Discounted total: ")
-              .append(discounted)
-              .append("$\n");
+    private String formatOrder(Order order, double grossEur, double discountedEur) {
+        StringBuilder text = new StringBuilder("Order ")
+                .append(order.getId()).append(":\n");
 
-        result.append("Gross total (USD): ")
-              .append(gross * USD_RATE)
-              .append("$\n");
+        for (Article article : order.getArticles()) {
+            text.append(String.format(Locale.US,
+                    "%s x%d @ %.2f EUR (discount %.1f%%) = %.2f EUR%n",
+                    article.getNombre(), article.getCantidad(), article.getPrecio(),
+                    article.getDescuento(), article.GetDiscountedamount()));
+        }
+        text.append(String.format(Locale.US,
+                "Gross total (EUR): %.2f EUR%nDiscounted total (EUR): %.2f EUR%n",
+                grossEur, discountedEur));
+        return text.toString();
+    }
 
-        result.append("Discounted total (USD): ")
-              .append(discounted * USD_RATE)
-              .append("$");
-
-        return result.toString();
+    private String formatDollarTotals(double grossEur, double discountedEur,
+                                      ExchangeRate rate) {
+        return String.format(Locale.US,
+                "Exchange rate (published %s): 1 EUR = %.6f USD%n"
+                        + "Gross total (USD): %.2f USD%n"
+                        + "Discounted total (USD): %.2f USD",
+                rate.date(), rate.rate(), grossEur * rate.rate(),
+                discountedEur * rate.rate());
     }
 }

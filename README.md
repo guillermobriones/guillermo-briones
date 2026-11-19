@@ -1,79 +1,73 @@
-# Proyecto Java Maven - [Nombre del Proyecto]
-Este proyecto es una plantilla base para comenzar a trabajar con aplicaciones Java
-utilizando Maven. Asegúrate de seguir las instrucciones para configurar tu entorno
-correctamente y entender cómo contribuir al proyecto.
-## Tabla de Contenidos
-- [Introducción](#introducción)
-- [Requisitos](#requisitos)
-- [Configuración del Entorno](#configuración-del-entorno)
-- [Estructura del Proyecto](#estructura-del-proyecto)
-- [Compilación y Ejecución](#compilación-y-ejecución)
-- [Contribución](#contribución)
-- [Licencia](#licencia)
----
-## Introducción
-Este es un proyecto base para aprender sobre el uso de **Java** y **Maven**. El
-objetivo familiarizarse con las buenas prácticas de desarrollo y gestionar
-dependencias utilizando Maven.
-## Requisitos
-Antes de comenzar, asegúrate de tener instalado lo siguiente en tu sistema:
-- **Java 8+** (JDK) - Puedes descargarlo desde
-[Oracle](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html) o
-[OpenJDK](https://openjdk.java.net/)
-- **Maven** - Puedes instalar Maven siguiendo las instrucciones en su sitio
-oficial:
-[https://maven.apache.org/install.html](https://maven.apache.org/install.html)
-- **IDE recomendada:** Visual Studio Code o cualquier editor de tu preferencia con
-soporte para Java.
-## Configuración del Entorno
-### 1. Instalar Java
-Asegúrate de que tienes **Java 8** o una versión superior instalada. Puedes
-verificarlo con el siguiente comando:
+# Order Management — aplicación MVC con Swing
+
+Aplicación Java 21 para buscar pedidos desde `orders.json`, mostrar sus artículos,
+descuentos y totales en euros y convertir esos totales a dólares utilizando
+el último tipo de cambio EUR/USD publicado por un servicio externo.
+
+## Arquitectura
+
+- **Modelo:** `com.uem.Model` (`Order`, `Article`), junto a los cálculos existentes.
+- **Vista:** `com.uem.View.OrderView` (ventana Swing, búsqueda, resultados e icono).
+- **Controlador:** `com.uem.Controller.OrderController` (localiza pedidos, solicita la conversión y actualiza la vista).
+- **Servicio:** `com.uem.Service.ExchangeRateService` (consulta HTTP del tipo EUR/USD).
+- **Recursos:** `src/main/resources/orders.json` y `app.png`.
+
+## Tipo de cambio
+
+Se utiliza [Frankfurter v2](https://frankfurter.dev/), endpoint:
+`https://api.frankfurter.dev/v2/rate/eur/usd`.
+
+- No necesita registro ni clave API.
+- Al pulsar **Search** para un pedido existente se solicita de nuevo el tipo de cambio.
+- Se muestra el valor recibido y la **fecha de publicación** de la cotización.
+- No es un precio de mercado en streaming: son tasas de referencia publicadas periódicamente.
+- La llamada utiliza `HttpClient.sendAsync` (la interfaz no se bloquea).
+- Timeout de conexión de 5 segundos y de petición de 10 segundos.
+- Si el servicio falla o no hay Internet, los totales en EUR permanecen visibles y
+  se indica que el cálculo en USD no está disponible (no se inventa un tipo fijo).
+- Se asume que los importes base contenidos en `orders.json` están expresados en EUR.
+
+## Ejecutar en desarrollo
+
+Se necesita **JDK 21** y **Maven**.
+
 ```bash
-java -version
+mvn clean verify
+java -jar target/guillermo-2.0.0.jar
 ```
-### 2. Instalar Maven
-Una vez que tengas Java instalado, puedes proceder con la instalación de Maven.
-Para verificar que Maven esté instalado correctamente, ejecuta el siguiente
-comando:
-mvn -version
-### 3. Configurar el IDE
-Para trabajar con este proyecto, puedes usar cualquier IDE que soporte Java, como
-Visual Studio Code, IntelliJ IDEA, Eclipse, etc. Si estás usando Visual Studio
-Code, asegúrate de instalar las siguientes extensiones:
-Java Extension Pack (de Microsoft)
-Maven for Java
-## Estructura del proyecto
-```plaintext
-[NombreDelProyecto]/
-├── src/
-│ └── main/
-│ └── java/
-│ └── com/
-│ └── ejemplo/
-│ └── App.java
-├── pom.xml
-├── target/
-└── README.md
-```
-## Compilación y ejecución
-Para compilar y ejecutar el proyecto, sigue estos pasos:
-Abre una terminal en la raíz del proyecto.
-Ejecuta el siguiente comando para compilar el proyecto:
+
+`mvn clean verify` compila y ejecuta las pruebas. `mvn package` produce un JAR
+con las dependencias incluidas (Gson y SLF4J), manifest `Main-Class` y recursos.
+
+## Ejecutable para Windows sin VS Code ni Java instalado
+
+En **Releases**, descarga `OrderManagement-Windows.zip`, descomprímelo
+(completo, incluida la carpeta `runtime`) y abre `OrderManagement.exe` con doble clic.
+El paquete incorpora su propio entorno Java 21 mediante `jpackage` y utiliza
+`packaging/app.ico` como icono. Necesita Internet únicamente para consultar USD.
+
+También se publica `guillermo-2.0.0.jar` como alternativa para equipos con JDK/JRE 21.
+
+## Publicar la versión 2.0.0
+
+Tras subir los cambios a `main` y verificar que las pruebas pasan, crea y sube
+la etiqueta `v2.0.0`:
+
 ```bash
-mvn clean install
+git tag v2.0.0
+git push origin v2.0.0
 ```
-Para ejecutar la aplicación, usa el siguiente comando:
-```bash
-mvn exec:java
-```
-## Contribución
-Si deseas contribuir a este proyecto, por favor sigue estos pasos:
-- Haz un fork del repositorio.
-- Crea una nueva rama (git checkout -b feature-nueva-funcionalidad).
-- Realiza tus cambios y haz commit (git commit -am 'Agregué nueva funcionalidad').
-- Empuja los cambios a tu fork (git push origin feature-nueva-funcionalidad).
-- Crea un pull request.
-## Licencia
-Este proyecto está bajo la Licencia MIT - consulta el archivo LICENSE para más
-detalles.
+
+El workflow `.github/workflows/release.yml` genera en GitHub Actions (Windows)
+la aplicación independiente, ejecuta pruebas y adjunta el ZIP y el JAR a la release.
+La release no se crea hasta que se publique la etiqueta.
+
+## Pruebas manuales recomendadas
+
+1. Buscar `O001` y comprobar artículos, descuentos, totales EUR y USD.
+2. Buscar `O005` y comprobar que la búsqueda sigue funcionando.
+3. Buscar `O999` y verificar `Order not found.`.
+4. Desconectar Internet temporalmente: deben seguir apareciendo los importes EUR,
+   junto con un aviso de que no se pudo convertir a USD.
+5. Abrir el archivo `OrderManagement.exe` extraído del ZIP en un PC Windows
+   sin abrir VS Code ni ejecutar Maven.
